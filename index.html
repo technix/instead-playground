@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>INSTEAD.js</title>
+    <script type="text/javascript">
+        var INSTEADjs = {
+            mute: true,     // Mute all sounds
+            preload: true,  // Preload all images while game is starting
+            autosave_on_click: false, // Autosave after each click
+            log: false,      // Enable logging
+            translation: {
+                loading: 'Загрузка...',
+                preload: 'Кэширование картинок',
+                empty: 'пусто',
+                menu_back: 'Вернуться в игру',
+                menu_save: 'Сохранить',
+                menu_load: 'Загрузить',
+                menu_reset: 'Начать заново',
+                menu_mute: 'Выключить звук',
+                menu_unmute: 'Включить звук',
+                menu_savegame: 'Сохранить игру',
+                menu_loadgame: 'Загрузить игру',
+                menu_import: 'Импорт',
+                menu_export: 'Экспорт сохранения',
+                menu_autosave: 'Автосохранение',
+                menu_cancel: 'Отмена'
+            }
+        };
+    </script>
+    <style id="theme_css"></style>
+<link href="./styles.css" rel="stylesheet"></head>
+<body>
+    <div id="stead-container">
+        <div id="menu">
+            <div id="menu-content">
+            <a href="" id="menu-back" data-action="back"></a>
+            <a href="" id="menu-save" data-action="menu-save"></a>
+            <a href="" id="menu-load" data-action="menu-load"></a>
+            <a href="" id="menu-reset" data-action="reset"></a>
+            <a href="" id="menu-mute" data-action="mute"></a>
+            <a href="" id="menu-export" data-action="menu-export"></a>
+            </div>
+            <div id="menu-saveload">
+            </div>
+        </div>
+        <div id="stead-toolbar">
+            <div id="stead-toolbar-info"></div>
+            <div id="stead-toolbar-buttons">
+                <button id="toolbar-mute"></button>
+                <button id="toolbar-log">&#128196;</button>
+            </div>
+        </div>
+        <div id="stead">
+            <div id="win">
+                <div id="title"></div>
+                <div id="picture"></div>
+                <div id="ways-top"></div>
+                <div class="wordwrap" id="text"></div>
+                <div id="ways-bottom"></div>
+            </div>
+            <div id="inventory"></div>
+            <div id="menu_button"><img id="menu_image"></img></div>
+        </div>
+        <div id="log"></div>
+    </div>
+
+<div id="editor">-- $Name:Playground samlple$
+instead_version "2.2.0"
+require "dash"
+require "para"
+require "quotes"
+
+knife = obj {
+    nam = "Нож";
+    dsc = function(s)
+        p( "^На полу лежит {складной нож}." );
+    end;
+    inv = function(s)
+        p( "Хороший складной нож с двумя лезвиями и штопором." );
+    end;
+    act = function(s)
+        take(s);
+        p( "Я подобрал нож с пола." );
+    end;
+};
+
+floor_hole = obj {
+    nam = "Дыра в полу";
+    dsc = function(s)
+        pr( "В полу {дыра}" );
+        if where(rope) == floor_ring then
+            pr( ", в которую теперь можно спуститься" );
+        end
+        p(".");
+    end;
+    act = function(s)
+        if where(rope) == floor_ring then
+            p( "Веревка держится крепко. Можно спускаться." );
+        else
+            p( "Похоже, тут довольно глубоко. Не хотелось бы сломать что-нибудь при прыжке." );
+        end
+    end;
+    used = function(s,w)
+        if w == rope then
+            p( "Мне нужно закрепить канат перед тем, как бросать его в дыру." );
+        end
+    end;
+};
+
+floor_ring = obj {
+    nam = "Дыра в полу";
+    dsc = function(s)
+        pr( "Недалеко от нее в пол вделано металлическое {кольцо}" );
+        if where(rope) ~= s then
+            p(".");
+        end
+    end;
+    act = function(s)
+        if where(rope) == s then
+            p( "Канат крепко привязан к кольцу." );
+        else
+            p( "Я подергал кольцо. Похоже, оно довольно прочно закреплено." );
+        end
+    end;
+    used = function(s,w)
+        if w == rope then
+            p( "Я привязал канат к кольцу." );
+            drop(rope,floor_ring);
+        end
+    end;
+};
+
+rope_h = obj {
+    nam = "Бельевая веревка";
+    dsc = function(s)
+        p( "Здесь висит {бельевая веревка}." );
+    end;
+    act = function(s)
+        p( "Веревка довольно длинная и прочная." );
+    end;
+    used = function(s,w)
+        if w == knife then
+            p( "Я срезал веревку и забрал." );
+            take(rope);
+            s:disable(); -- убрать висящую веревку
+        end
+    end;
+};
+
+rope = obj {
+    nam = "Веревка";
+    dsc = function(s)
+        if where(rope) == floor_ring then
+            p( "с привязанной к нему {веревкой}." );
+        else
+            p( "^На полу лежит {кусок веревки}." );
+        end
+    end;
+    inv = function(s)
+        p( "Кусок бельевой веревки длиной около десятка футов." );
+    end;
+    act = function(s)
+        if where(s) == floor_ring then
+            p( "Я отвязал веревку от кольца и забрал с собой." );
+        else
+            p( "Я забрал веревку." );
+        end
+        take(s);
+    end;
+    used = function(s,w)
+        if w == knife and where(s) == floor_ring then
+            p( "Я отрезал веревку от кольца и забрал." );
+            take(rope);
+        end
+    end;
+};
+
+
+path_to_down_room = vroom('Спуститься в дыру', 'room_down');
+
+main = room {
+    forcedsc = true;
+    nam = 'Комната с дырой в полу';
+    dsc = function(s)
+        p("Комната. ");
+        if where(rope) == floor_ring then
+            p( "К кольцу привязана веревка." );
+        end
+    end;
+    obj = { 
+        floor_hole;
+        floor_ring;
+        rope_h;
+        knife;
+        obj { 
+            nam = "path_checker", 
+            dsc = function(s)
+                if where(rope) == floor_ring then
+                    path_to_down_room:enable();
+                else
+                    path_to_down_room:disable();
+                end
+                pr("");
+            end
+        };
+    };
+    way = {
+        path_to_down_room
+    }
+};
+
+room_down = room {
+    forsedsc = true;
+    nam = "Подвал";
+    dsc = [[Я оказался в подвале. Задача успешно решена!]];
+    way = {
+        vroom('Обратно', 'main');
+    };
+};
+</div>
+    <br/>
+    <div id="error">
+    
+    </div>
+    <script src="./ace.js"></script>
+    
+<script type="text/javascript" src="./instead.js"></script></body>
+</html>
